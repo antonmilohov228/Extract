@@ -1,3 +1,11 @@
-pip install requests pyyaml python-dotenv
-API_TOKEN=X
-python src/extract.py
+# Проект: Анализ выбросов CO2 (США)
+
+## Неделя 2: Extract (World Bank API)
+
+### Описание
+Скрипт предназначен для извлечения данных из API Всемирного банка по индикатору `EN.ATM.CO2E.PC` (CO2 на душу населения в метрических тоннах) для США.
+
+### Как запустить (Windows)
+1. Установите необходимые библиотеки:
+   ```cmd
+   pip install requests pyyaml
