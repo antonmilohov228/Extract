@@ -1,0 +1,14 @@
+variant_id: 14
+source_type: "world_bank"
+entity:
+  country_iso3: "USA"
+  indicator: "EN.ATM.CO2E.PC"
+api:
+  base_url: "https://api.worldbank.org/v2"
+  request_template: "/country/USA/indicator/EN.ATM.CO2E.PC"
+  params:
+    format: "json"
+    per_page: 20000
+  timeout: 15
+storage:
+  raw_dir: "data/raw"
