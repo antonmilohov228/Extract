@@ -9,12 +9,11 @@ def run_extract(config_path):
         config = yaml.safe_load(f)
 
     url = f"{config['api']['base_url']}{config['api']['request_template']}"
-    params = config['api']['params']
     
-    print(f"[*] Extracting World Bank data for variant {config['variant_id']}...")
+    print(f"[*] Запрос к World Bank API...")
     
     try:
-        response = requests.get(url, params=params, timeout=config['api']['timeout'])
+        response = requests.get(url, params=config['api']['params'], timeout=config['api']['timeout'])
         response.raise_for_status()
         raw_json = response.json()
 
@@ -22,13 +21,16 @@ def run_extract(config_path):
         output_dir = os.path.join(config['storage']['raw_dir'], today)
         os.makedirs(output_dir, exist_ok=True)
 
-        filename = f"worldbank_usa_co2_{datetime.now().strftime('%H%M%S')}.json"
+        timestamp = datetime.now().strftime("%H%M%S")
+        filename = f"raw_usa_co2_{timestamp}.json"
         full_path = os.path.join(output_dir, filename)
 
         with open(full_path, 'w', encoding='utf-8') as f:
             json.dump(raw_json, f, ensure_ascii=False, indent=4)
 
-        print(f"[+] Success! Raw data saved to: {full_path}")
+        print(f"[+] Сырые данные сохранены: {full_path}")
+        return full_path
         
     except Exception as e:
-        print(f"[!] Extract failed: {e}")
+        print(f"[!] Ошибка при извлечении: {e}")
+        return None
