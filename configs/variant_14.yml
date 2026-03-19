@@ -2,13 +2,14 @@ variant_id: 14
 source_type: "world_bank"
 entity:
   country_iso3: "USA"
-  indicator: "EN.ATM.CO2E.PC"
+  indicator: "EN.GHG.CO2.PC.CE.AR5" 
 api:
   base_url: "https://api.worldbank.org/v2"
-  request_template: "/country/USA/indicator/EN.ATM.CO2E.PC"
+  request_template: "/country/USA/indicator/EN.GHG.CO2.PC.CE.AR5"
   params:
     format: "json"
-    per_page: 20000
+    per_page: 100
   timeout: 15
 storage:
   raw_dir: "data/raw"
+  normalized_dir: "data/normalized/usa_co2_emissions"
