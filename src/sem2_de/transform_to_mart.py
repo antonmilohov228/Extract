@@ -3,56 +3,61 @@ import os
 import glob
 from datetime import datetime
 
-def get_latest_file(directory_path):
-    files = glob.glob(os.path.join(directory_path, "*.csv"))
+
+def run_mart_pipeline():
+    current_script_path = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(current_script_path))
+
+    norm_path = os.path.join(project_root, "data", "normalized", "usa_co2_emissions")
+    ref_path = os.path.join(project_root, "reference", "countries.csv")
+    mart_dir = os.path.join(project_root, "data", "mart", "usa_co2_emissions")
+
+    files = glob.glob(os.path.join(norm_path, "*.csv"))
     if not files:
-        raise FileNotFoundError(f"В папке {directory_path} нет CSV файлов для обработки.")
+        print(f"[!] ОШИБКА: В папке {norm_path} нет CSV файлов.")
+        return
+    latest_file = max(files, key=os.path.getctime)
 
-    return max(files, key=os.path.getctime)
+    df = pd.read_csv(latest_file)
+    ref = pd.read_csv(ref_path, sep=None, engine='python')
 
-def calculate_kpi(df):
-    df = df.sort_values('year', ascending=True)
-    df['prev_value'] = df['value'].shift(1)
-    df['abs_change'] = df['value'] - df['prev_value']
-    df['growth_rate_pct'] = (df['abs_change'] / df['prev_value']) * 100
-    df['growth_rate_pct'] = df['growth_rate_pct'].round(2)
-    df['abs_change'] = df['abs_change'].round(4)
-    df = df.sort_values('year', ascending=False)
-    
-    return df
+    potential_names = ['iso3', 'name', 'region']
+    ref.columns = potential_names[:len(ref.columns)]
 
-norm_dir = os.path.join("..", "data", "normalized", "usa_co2_emissions")
-ref_path = os.path.join("..", "reference", "countries.csv")
-mart_dir = os.path.join("..", "data", "mart", "usa_co2_emissions")
+    print(f"[*] Итоговые колонки в справочнике: {list(ref.columns)}")
 
-print("Шаг 1. Поиск свежих данных...")
-latest_norm_file = get_latest_file(norm_dir)
-print(f"Берем в работу файл: {latest_norm_file}")
-df_norm = pd.read_csv(latest_norm_file)
+    if 'countryiso3code' in df.columns:
+        df = df.rename(columns={'countryiso3code': 'country_iso3'})
+    if 'date' in df.columns:
+        df = df.rename(columns={'date': 'year'})
 
-print("Шаг 2. Загрузка справочника...")
-df_ref = pd.read_csv(ref_path)
+    df_mart = df.merge(
+        ref,
+        left_on='country_iso3',
+        right_on='iso3',
+        how='left'
+    )
 
-print("Шаг 3. Объединение (JOIN)...")
-df_mart = df_norm.merge(
-    df_ref[['iso3', 'name', 'region']], 
-    left_on='country_iso3', 
-    right_on='iso3', 
-    how='left'
-)
+    if 'iso3' in df_mart.columns:
+        df_mart = df_mart.drop(columns=['iso3'])
 
-df_mart = df_mart.drop(columns=['iso3'])
-df_mart = df_mart.rename(columns={'name': 'country_name'})
+    df_mart = df_mart.sort_values('year')
+    df_mart['prev_val'] = df_mart['value'].shift(1)
 
-print("Шаг 4. Расчет KPI метрик...")
-df_mart = calculate_kpi(df_mart)
+    df_mart['abs_change'] = (df_mart['value'] - df_mart['prev_val']).round(4)
 
-print("Шаг 5. Сохранение витрины (Mart)...")
-os.makedirs(mart_dir, exist_ok=True)
+    df_mart['growth_rate_pct'] = 0.0
+    mask = df_mart['prev_val'] != 0
+    df_mart.loc[mask, 'growth_rate_pct'] = ((df_mart['abs_change'] / df_mart['prev_val']) * 100).round(2)
 
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-output_path = os.path.join(mart_dir, f"mart_usa_co2_{timestamp}.csv")
+    df_mart = df_mart.drop(columns=['prev_val']).sort_values('year', ascending=False)
 
-df_mart.to_csv(output_path, index=False)
+    os.makedirs(mart_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    save_path = os.path.join(mart_dir, f"mart_co2_usa_{timestamp}.csv")
 
-print(f"\nУспех! Витрина готова. Файл лежит тут:\n{output_path}")
+    df_mart.to_csv(save_path, index=False)
+    print(f"[+] ГОТОВО! Витрина создана:\n{save_path}")
+
+
+run_mart_pipeline()
