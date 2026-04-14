@@ -3,9 +3,9 @@ import json
 import os
 import pandas as pd
 from datetime import datetime
-from extract import run_extract
-from transform_to_mart import run_mart_pipeline
-from load import load_to_postgres, get_latest_mart_file
+from .extract import run_extract
+from .transform_to_mart import run_mart_pipeline
+from .load import load_to_postgres, get_latest_mart_file
 
 def get_state(state_path):
     if os.path.exists(state_path):
