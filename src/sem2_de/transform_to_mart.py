@@ -60,4 +60,3 @@ def run_mart_pipeline():
     print(f"[+] ГОТОВО! Витрина создана:\n{save_path}")
 
 
-run_mart_pipeline()
